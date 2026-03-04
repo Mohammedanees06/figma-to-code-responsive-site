@@ -1,4 +1,4 @@
-# Mangalam HDPE Pipes — Product Website
+# Mangalam HDPE Pipes - Product Website
 
 > A fully responsive industrial product website built with vanilla HTML, CSS, and JavaScript.
 > Designed to convert a detailed UI spec into a pixel-accurate, interactive frontend — no frameworks, no dependencies.
