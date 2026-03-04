@@ -1,5 +1,7 @@
 /* -----------------------------------------------------------------
    1. STICKY HEADER
+   Watches when the hero section leaves the viewport and shows a
+   sticky bar — hides it again when the user scrolls back up
    ----------------------------------------------------------------- */
 const stickyHeader = document.getElementById('sticky-header');
 const heroSection  = document.querySelector('.product-hero');
@@ -7,6 +9,7 @@ const heroSection  = document.querySelector('.product-hero');
 if (stickyHeader && heroSection) {
   const heroObserver = new IntersectionObserver(
     ([entry]) => {
+      // entry.isIntersecting is true when hero is visible, false when scrolled past
       stickyHeader.classList.toggle('visible', !entry.isIntersecting);
     },
     { threshold: 0 }
@@ -17,8 +20,8 @@ if (stickyHeader && heroSection) {
 
 /* -----------------------------------------------------------------
    2. HERO IMAGE CAROUSEL
-   - Slides between multiple product images
-   - Auto-plays every 3.5s, Arrow buttons, dot navigation, touch/swipe support
+   Slides between product images using translateX on the track.
+   Auto-plays every 3.5s — resets the timer if the user clicks an arrow.
    ----------------------------------------------------------------- */
 (function initHeroCarousel() {
   const track   = document.querySelector('.hero-track');
@@ -35,26 +38,34 @@ if (stickyHeader && heroSection) {
   let autoTimer = null;
 
   function goTo(index) {
+    // Wrap around at both ends
     if (index < 0) index = slides.length - 1;
     if (index >= slides.length) index = 0;
     current = index;
+
+    // Each slide is 100% wide, so multiplying by 100% shifts exactly one slide
     track.style.transform = `translateX(-${current * 100}%)`;
+
+    // Keep dots in sync with the active slide
     dots.forEach((d, i) => d.classList.toggle('active', i === current));
   }
 
   if (btnNext) btnNext.addEventListener('click', () => { goTo(current + 1); resetAuto(); });
   if (btnPrev) btnPrev.addEventListener('click', () => { goTo(current - 1); resetAuto(); });
 
+  // Clicking a dot jumps straight to that slide
   dots.forEach((dot, i) => dot.addEventListener('click', () => { goTo(i); resetAuto(); }));
 
   function startAuto() {
     autoTimer = setInterval(() => goTo(current + 1), 3500);
   }
   function resetAuto() {
+    // Clear and restart so manual interaction doesn't fight the auto-play timer
     clearInterval(autoTimer);
     startAuto();
   }
 
+  // Swipe support — only fires if the horizontal drag is more than 50px
   let touchStartX = 0;
   track.addEventListener('touchstart', (e) => {
     touchStartX = e.touches[0].clientX;
@@ -74,8 +85,9 @@ if (stickyHeader && heroSection) {
 
 /* -----------------------------------------------------------------
    3. APPLICATIONS CAROUSEL — Infinite loop
-   - Clones first + last cards for seamless wrapping
-   - Arrow buttons + touch/swipe support
+   Clones the first and last cards and inserts them at opposite ends.
+   When the track lands on a clone, it silently jumps to the real card
+   so the loop feels seamless with no visible snap.
    ----------------------------------------------------------------- */
 (function initAppCarousel() {
   const track   = document.querySelector('.app-track');
@@ -86,17 +98,21 @@ if (stickyHeader && heroSection) {
   const originalCards = Array.from(track.querySelectorAll('.app-card'));
   if (!originalCards.length) return;
 
+  // Clone first → append to end, clone last → prepend to start
   const firstClone = originalCards[0].cloneNode(true);
   const lastClone  = originalCards[originalCards.length - 1].cloneNode(true);
-  firstClone.setAttribute('aria-hidden', 'true');
+  firstClone.setAttribute('aria-hidden', 'true'); // hide clones from screen readers
   lastClone.setAttribute('aria-hidden', 'true');
   track.appendChild(firstClone);
   track.insertBefore(lastClone, originalCards[0]);
 
+  // Layout: [lastClone] [card1] [card2] ... [cardN] [firstClone]
+  // Start at index 1 so we're on the first real card
   let currentIndex    = 1;
   let isTransitioning = false;
 
   function getCardWidth() {
+    // Measure live — accounts for gap and window resize
     const card = track.querySelector('.app-card');
     return card ? card.offsetWidth + 20 : 320;
   }
@@ -104,26 +120,29 @@ if (stickyHeader && heroSection) {
   function setPosition(animated) {
     track.style.transition = animated
       ? 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      : 'none';
+      : 'none'; // skip animation when silently jumping between real/clone cards
     track.style.transform = `translateX(-${currentIndex * getCardWidth()}px)`;
   }
 
+  // Drop into position on first paint with no animation
   requestAnimationFrame(() => setPosition(false));
 
   function goTo(index) {
-    if (isTransitioning) return;
+    if (isTransitioning) return; // block rapid clicking mid-transition
     isTransitioning = true;
     currentIndex = index;
     setPosition(true);
   }
 
+  // Once the CSS transition finishes, check if we landed on a clone
+  // and silently jump to the matching real card
   track.addEventListener('transitionend', () => {
     const total = track.querySelectorAll('.app-card').length;
     if (currentIndex === 0) {
-      currentIndex = total - 2;
+      currentIndex = total - 2; // was on lastClone, jump to real last
       setPosition(false);
     } else if (currentIndex === total - 1) {
-      currentIndex = 1;
+      currentIndex = 1; // was on firstClone, jump to real first
       setPosition(false);
     }
     isTransitioning = false;
@@ -132,6 +151,7 @@ if (stickyHeader && heroSection) {
   btnNext.addEventListener('click', () => goTo(currentIndex + 1));
   btnPrev.addEventListener('click', () => goTo(currentIndex - 1));
 
+  // Keyboard support on the arrow buttons
   [btnNext, btnPrev].forEach((btn) => {
     btn.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -141,6 +161,7 @@ if (stickyHeader && heroSection) {
     });
   });
 
+  // Swipe support
   let touchStartX = 0;
   track.addEventListener('touchstart', (e) => {
     touchStartX = e.touches[0].clientX;
@@ -152,14 +173,15 @@ if (stickyHeader && heroSection) {
     }
   });
 
+  // Recalculate card widths after a window resize so position stays accurate
   window.addEventListener('resize', () => setPosition(false));
 })();
 
 
 /* -----------------------------------------------------------------
    4. FAQ ACCORDION
-   - Click or Enter/Space to toggle
-   - Arrow Up/Down to move between questions
+   Closes any open item before opening the clicked one.
+   Keyboard: Enter/Space toggles, Up/Down arrows move focus between questions.
    ----------------------------------------------------------------- */
 (function initFAQ() {
   const faqItems = Array.from(document.querySelectorAll('.faq-item'));
@@ -170,6 +192,7 @@ if (stickyHeader && heroSection) {
     if (!question || !answer) return;
 
     question.setAttribute('tabindex', '0');
+    // Reflect the initial open/closed state in the ARIA attribute
     question.setAttribute('aria-expanded', item.classList.contains('active') ? 'true' : 'false');
 
     question.addEventListener('click', () => toggleFAQ(item));
@@ -179,6 +202,7 @@ if (stickyHeader && heroSection) {
         e.preventDefault();
         toggleFAQ(item);
       }
+      // Arrow keys move focus — makes the FAQ keyboard-navigable without a mouse
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         faqItems[idx + 1]?.querySelector('.faq-question')?.focus();
@@ -192,10 +216,12 @@ if (stickyHeader && heroSection) {
 
   function toggleFAQ(activeItem) {
     const isOpen = activeItem.classList.contains('active');
+    // Close everything first so only one item can be open at a time
     faqItems.forEach((fi) => {
       fi.classList.remove('active');
       fi.querySelector('.faq-question')?.setAttribute('aria-expanded', 'false');
     });
+    // Re-open only if it wasn't already open (clicking an open item closes it)
     if (!isOpen) {
       activeItem.classList.add('active');
       activeItem.querySelector('.faq-question')?.setAttribute('aria-expanded', 'true');
@@ -206,7 +232,8 @@ if (stickyHeader && heroSection) {
 
 /* -----------------------------------------------------------------
    5. PROCESS TABS
-   - Arrow Left/Right cycles through tabs
+   Clicking a tab marks it active and hides the rest.
+   Arrow keys cycle through tabs — standard ARIA tablist pattern.
    ----------------------------------------------------------------- */
 (function initProcessTabs() {
   const tabs = Array.from(document.querySelectorAll('.process-tabs .tab'));
@@ -237,6 +264,7 @@ if (stickyHeader && heroSection) {
       const active = i === index;
       t.classList.toggle('active', active);
       t.setAttribute('aria-selected', active ? 'true' : 'false');
+      // Only the active tab is reachable via Tab key
       t.setAttribute('tabindex', active ? '0' : '-1');
     });
   }
@@ -244,7 +272,9 @@ if (stickyHeader && heroSection) {
 
 
 /* -----------------------------------------------------------------
-   6. LAZY LOAD IMAGES — IntersectionObserver
+   6. LAZY LOAD IMAGES
+   Images using data-src are only fetched once they're near the viewport.
+   The 200px root margin starts loading them just before they'd be visible.
    ----------------------------------------------------------------- */
 (function initLazyLoad() {
   const lazyImages = document.querySelectorAll('img[data-src]');
@@ -255,11 +285,11 @@ if (stickyHeader && heroSection) {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         const img = entry.target;
-        img.src = img.dataset.src;
+        img.src = img.dataset.src; // swap data-src into real src to trigger the network fetch
         if (img.dataset.srcset) img.srcset = img.dataset.srcset;
         img.removeAttribute('data-src');
-        img.classList.add('img-loaded');
-        observer.unobserve(img);
+        img.classList.add('img-loaded'); // CSS uses this to fade the image in
+        observer.unobserve(img); // stop watching once it's loaded
       });
     },
     { rootMargin: '200px 0px', threshold: 0 }
@@ -271,27 +301,31 @@ if (stickyHeader && heroSection) {
 
 /* -----------------------------------------------------------------
    7. SMOOTH NAV SCROLL
-   - Custom easing — no CSS scroll-behavior needed
-   - Accounts for sticky navbar height automatically
+   Uses requestAnimationFrame with custom easing instead of
+   CSS scroll-behavior: smooth — that global property causes a
+   noticeable lag when the user tries to scroll manually.
+   This only kicks in on anchor link clicks, so normal scrolling stays instant.
    ----------------------------------------------------------------- */
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', function (e) {
     const targetId = this.getAttribute('href');
-    if (targetId === '#') return;
+    if (targetId === '#') return; // skip the logo link
 
     const target = document.querySelector(targetId);
     if (!target) return;
 
     e.preventDefault();
 
+    // Read the actual navbar height so the section isn't hidden under the sticky bar
     const navHeight = document.querySelector('.main-header')?.offsetHeight || 70;
     const startTop  = window.scrollY;
     const targetTop = target.getBoundingClientRect().top + startTop - navHeight;
     const distance  = targetTop - startTop;
-    const duration  = 800;
+    const duration  = 800; // ms — tweak if it feels too fast or too slow
     let startTime   = null;
 
     function easeInOutCubic(t) {
+      // Starts slow, speeds up in the middle, slows again at the end
       return t < 0.5
         ? 4 * t * t * t
         : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -312,18 +346,18 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
 
 /* -----------------------------------------------------------------
    8. DARK MODE TOGGLE
-   - Saves preference to localStorage
-   - Respects system preference on first visit
+   On first visit checks the OS-level dark mode preference.
+   After that, remembers the user's manual choice in localStorage.
    ----------------------------------------------------------------- */
 (function initDarkMode() {
   const btn  = document.getElementById('themeToggle');
   const root = document.documentElement;
 
-  // Check saved preference, then system preference
   const saved  = localStorage.getItem('theme');
   const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  const initial = saved || system;
+  const initial = saved || system; // saved choice always wins over system default
 
+  // data-theme on <html> lets all the [data-theme="dark"] CSS selectors take over
   root.setAttribute('data-theme', initial);
 
   if (btn) {
@@ -331,7 +365,7 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
       const current = root.getAttribute('data-theme');
       const next    = current === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
+      localStorage.setItem('theme', next); // persist so the choice survives a page reload
     });
   }
 })();
