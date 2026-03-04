@@ -1,6 +1,7 @@
 # Mangalam HDPE Pipes — Product Website
 
-> A fully responsive industrial product website built with vanilla HTML, CSS, and JavaScript. Designed to convert a detailed UI spec into a pixel-accurate, interactive frontend — no frameworks, no dependencies.
+> A fully responsive industrial product website built with vanilla HTML, CSS, and JavaScript.
+> Designed to convert a detailed UI spec into a pixel-accurate, interactive frontend — no frameworks, no dependencies.
 
 🌐 **Live Demo:** [industrialwebsitee.netlify.app](https://industrialwebsitee.netlify.app/)
 
@@ -46,20 +47,21 @@ The focus was on clean architecture, modern layout systems, smooth UI interactio
 ## Tech Stack
 
 ```
-HTML5        Semantic structure, accessibility
-CSS3         Flexbox, Grid, Custom Properties, Media Queries
-JavaScript   Vanilla ES6+ — no frameworks or libraries
-Fonts        Google Fonts — Sora + DM Sans
-Images       Unsplash CDN
+HTML5          Semantic structure, accessibility
+CSS3           Flexbox, Grid, Custom Properties, Media Queries
+JavaScript     Vanilla ES6+ — no frameworks or libraries
+Fonts          Google Fonts — Sora + DM Sans
+Images         Unsplash CDN
 ```
 
-No build tools, bundlers, or package managers required.
+> No build tools, bundlers, or package managers required.
 
 ---
 
 ## Project Structure
 
-figma-to-code-responsive-site
+```
+figma-to-code-responsive-site/
 │
 ├── index.html          # Full page markup
 ├── styles.css          # All styles — tokens, layout, components, dark mode
@@ -77,38 +79,45 @@ figma-to-code-responsive-site
 ## Key Implementation Details
 
 ### Hero Image Carousel
+
 - `transform: translateX()` for GPU-accelerated smooth sliding
 - Auto-plays every 3.5s with pause-on-interaction
 - Dot indicators sync with active slide
 - Touch swipe support for mobile
 
 ### Applications Carousel — Infinite Loop
+
 - First and last cards cloned to create seamless wrap-around
 - State-based index management with `transitionend` silent jump
 - Dynamic card width calculation on resize
 
 ### Dark Mode
+
 - CSS custom property overrides via `[data-theme="dark"]` on `<html>`
 - Detects `prefers-color-scheme` on first visit
 - Manual toggle persisted in `localStorage`
 - Covers all sections — no white flash or invisible text
 
 ### Smooth Navigation Scroll
+
 - Custom `easeInOutCubic` animation via `requestAnimationFrame`
 - No `scroll-behavior: smooth` on `html` — avoids scroll lag on manual scrolling
 - Auto-offsets for sticky navbar height using `offsetHeight`
 
 ### FAQ Accordion
+
 - Only one item open at a time
 - `aria-expanded` toggled for screen reader support
 - Arrow key navigation between questions
 
 ### Process Tabs
+
 - `role="tablist"` / `role="tab"` ARIA pattern
 - Arrow Left / Right keyboard cycling
-- Home / End key support
+- `Home` / `End` key support
 
 ### Lazy Image Loading
+
 - `IntersectionObserver` with `200px` root margin
 - Triggers before image enters viewport to prevent visible loading
 - Smooth fade-in via `.img-loaded` class
@@ -121,12 +130,14 @@ figma-to-code-responsive-site
 # 1. Clone the repository
 git clone https://github.com/Mohammedanees06/figma-to-code-responsive-site.git
 
-# 2. Open in browser
+# 2. Navigate into the project
 cd figma-to-code-responsive-site
+
+# 3. Open in browser
 open index.html
 ```
 
-No installation, no build step, no dependencies. Open and run.
+> No installation, no build step, no dependencies. Open and run.
 
 ---
 
